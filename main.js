@@ -10,7 +10,7 @@ const PORT = 3000
 
 // Configuración de CORS
 const corsOptions = {
-  origin: 'http://localhost:5173',
+  origin: ['http://localhost:5173', 'https://dashboard-iot-one.vercel.app/'],
   credentials: true
 }
 app.use(cors(corsOptions))
