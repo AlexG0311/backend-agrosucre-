@@ -39,7 +39,7 @@ const corsOptions = {
 }
 
 app.use(cors(corsOptions))
-app.options('/*', cors(corsOptions))
+app.options(/.*/, cors(corsOptions))
 
 // Configuración de InfluxDB
 const client = new InfluxDBClient({
