@@ -6,14 +6,40 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 const app = express()
-const PORT = 3000
+const PORT = process.env.PORT || 3000
 
 // Configuración de CORS
+const defaultOrigins = [
+  'http://localhost:5173',
+  'https://dashboard-iot-one.vercel.app'
+]
+const envOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : []
+const allowedOrigins = new Set([...defaultOrigins, ...envOrigins])
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) {
+    return true
+  }
+
+  const normalized = origin.endsWith('/') ? origin.slice(0, -1) : origin
+  return allowedOrigins.has(normalized)
+}
+
 const corsOptions = {
-  origin: ['http://localhost:5173', 'https://dashboard-iot-one.vercel.app/'],
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      return callback(null, true)
+    }
+
+    return callback(new Error('Not allowed by CORS'))
+  },
   credentials: true
 }
+
 app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))
 
 // Configuración de InfluxDB
 const client = new InfluxDBClient({
