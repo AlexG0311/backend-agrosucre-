@@ -50,16 +50,35 @@ const client = new InfluxDBClient({
 // Consultar sensores
 app.get('/sensores', async (req, res) => {
   try {
+    // 1. Obtener el timestamp del último dato registrado
+    const lastTimeSql = `
+      SELECT MAX(time) AS last_time
+      FROM sensores
+    `
+
+    let lastTime = null
+    for await (const row of client.query(lastTimeSql, "Estacion")) {
+      lastTime = row.last_time
+    }
+
+    if (!lastTime) {
+      return res.json([])
+    }
+
+    // 2. Traer todos los registros dentro de un margen de 1 minuto
+    //    desde el último dato (por si los sensores no envían exactamente al mismo ms)
     const sql = `
       SELECT *
       FROM sensores
-      WHERE time >= now() - INTERVAL '5 day'
+      WHERE time >= '${new Date(Number(lastTime) - 60_000).toISOString()}'
+      ORDER BY time DESC
     `
+
     const rows = []
-    const result = client.query(sql, "Estacion")
-    for await (const row of result) {
+    for await (const row of client.query(sql, "Estacion")) {
       rows.push(row)
     }
+
     res.json(rows)
   } catch (error) {
     console.error("Error:", error.message)
